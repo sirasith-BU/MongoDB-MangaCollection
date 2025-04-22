@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: manga-backend
+    env: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: MongoDB_Connection_String
+        value: mongodb+srv://sirasith:mnykwLhMNovtyZNo@mangacollection.fl6ceqd.mongodb.net/
