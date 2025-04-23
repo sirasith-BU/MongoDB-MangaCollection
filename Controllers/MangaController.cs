@@ -33,7 +33,6 @@ public class MangaController : ControllerBase
             return BadRequest(new { success = false, message = ex });
         }
     }
-
     [HttpGet("{id}")]
     public async Task<ActionResult<List<Manga>>> GetMangaAsync(int id)
     {
@@ -66,7 +65,57 @@ public class MangaController : ControllerBase
             return BadRequest(new { success = false, message = ex });
         }
     }
+    [HttpGet("search")]
+    public async Task<ActionResult<List<Manga>>> SearchMangas(
+    [FromQuery] string? keyword,
+    [FromQuery] string? type,
+    [FromQuery] string? publisher)
+    {
+        try
+        {
+            var mangas = await _mangaRepository.SearchAllMangas(keyword!, type!, publisher!);
+            var mangaDTOs = mangas.Select(manga => new
+            {
+                manga.MangaId,
+                manga.Title,
+                manga.Publisher,
+                manga.ImageUrl,
+                manga.Description
+            }).ToList();
 
+            return Ok(new { success = true, message = "Search Manga Successful", data = mangaDTOs });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex });
+        }
+    }
+    [HttpGet("types")]
+    public async Task<ActionResult<List<string>>> DistinctTypes()
+    {
+        try
+        {
+            List<string> types = await _mangaRepository.GetDistinctTypesAsync();
+            return Ok(new { success = true, messeage = "Get type successful", data = types });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex });
+        }
+    }
+    [HttpGet("publishers")]
+    public async Task<ActionResult<List<string>>> DistinctPublishers()
+    {
+        try
+        {
+            List<string> publishers = await _mangaRepository.GetDistinctPublishersAsync();
+            return Ok(new { success = true, messeage = "Get publisher successful", data = publishers });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex });
+        }
+    }
     [HttpPost]
     public async Task<IActionResult> CreateManga([FromBody] CreateMangaDTO newMangaData)
     {
@@ -81,7 +130,6 @@ public class MangaController : ControllerBase
             return BadRequest(new { success = false, message = ex });
         }
     }
-
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateManga(int id, [FromBody] UpdateMangaDTO newMangaData)
     {
@@ -110,7 +158,6 @@ public class MangaController : ControllerBase
             return BadRequest(new { success = false, message = ex });
         }
     }
-
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteManga(int id)
     {
