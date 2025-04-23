@@ -6,8 +6,8 @@ public class MangaRepository : IMangaRepository
 
     public MangaRepository(IConfiguration config)
     {
-        // var client = new MongoClient(Environment.GetEnvironmentVariable("Docker_MongoDB"));
         var client = new MongoClient(Environment.GetEnvironmentVariable("MongoDB_Connection_String"));
+        // var client = new MongoClient(config["MongoDB:ConnectionString"]);
         var database = client.GetDatabase(config["MongoDB:DatabaseName"]);
         _mangaCollection = database.GetCollection<Manga>(config["MongoDB:CollectionName"]);
     }

@@ -26,7 +26,7 @@ public class MangaController : ControllerBase
                 manga.Description
             }).ToList();
 
-            return Ok(mangaDTOs);
+            return Ok(new { success = true, message = "Load Manga Successful", data = mangaDTOs });
         }
         catch (Exception ex)
         {
@@ -59,7 +59,7 @@ public class MangaController : ControllerBase
                 manga.Description
             }).ToList();
 
-            return Ok(mangaDTOs);
+            return Ok(new { success = true, message = "Get " + manga.Title + " Async", data = mangaDTOs });
         }
         catch (Exception ex)
         {
@@ -74,7 +74,7 @@ public class MangaController : ControllerBase
         {
             var newManga = new Manga(newMangaData);
             await _mangaRepository.CreateManga(newManga);
-            return Ok(new { success = true, message = "Create manga successful" });
+            return Ok(new { success = true, message = "Create " + newMangaData.Title + " successful" });
         }
         catch (Exception ex)
         {
@@ -103,7 +103,7 @@ public class MangaController : ControllerBase
             manga.Description = newMangaData.Description ?? manga.Description;
 
             await _mangaRepository.UpdateMangaById(id, manga);
-            return Ok(new { success = true, message = "Update manga successful" });
+            return Ok(new { success = true, message = "Update " + newMangaData.Title + " successful" });
         }
         catch (Exception ex)
         {
