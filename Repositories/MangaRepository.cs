@@ -1,71 +1,74 @@
+using MangaAPI.Core;
+using MangaAPI.Models;
+using MangaAPI.Repositories.interfaces;
 using MongoDB.Driver;
 
-public class MangaRepository : IMangaRepository
+namespace MangaAPI.Repositories
 {
-    private readonly IMongoCollection<Manga> _mangaCollection;
-
-    public MangaRepository(IConfiguration config)
+    public class MangaRepository : IMangaRepository
     {
-        var client = new MongoClient(Environment.GetEnvironmentVariable("MongoDB_Connection_String"));
-        // var client = new MongoClient(config["MongoDB:ConnectionString"]);
-        var database = client.GetDatabase(config["MongoDB:DatabaseName"]);
-        _mangaCollection = database.GetCollection<Manga>(config["MongoDB:CollectionName"]);
-    }
-    public async Task<List<Manga>> SearchAllMangas(string searchText, string type, string publisher)
-    {
-        var filters = new List<FilterDefinition<Manga>>();
+        private readonly IMongoCollection<Manga> _mangaCollection;
 
-        if (!string.IsNullOrEmpty(searchText))
+        public MangaRepository(MongoDBContext mongoDBContext)
         {
-            filters.Add(Builders<Manga>.Filter.And(
-            Builders<Manga>.Filter.Where(g =>
-            string.IsNullOrEmpty(searchText) ||
-            g.MangaId.ToString().Contains(searchText) ||
-            g.Title.Contains(searchText, StringComparison.CurrentCultureIgnoreCase) ||
-            g.Description.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
-            )
-        ));
+            _mangaCollection = mongoDBContext.Mangas;
         }
-        if (!string.IsNullOrEmpty(type))
+        public async Task<List<Manga>> SearchAllMangas(string searchText, string type, string publisher)
         {
-            filters.Add(Builders<Manga>.Filter.Eq(g => g.Type, type));
+            var filters = new List<FilterDefinition<Manga>>();
+
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                filters.Add(Builders<Manga>.Filter.And(
+                Builders<Manga>.Filter.Where(g =>
+                string.IsNullOrEmpty(searchText) ||
+                g.MangaId.ToString().Contains(searchText) ||
+                g.Title.Contains(searchText, StringComparison.CurrentCultureIgnoreCase) ||
+                g.Description.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
+                )
+            ));
+            }
+            if (!string.IsNullOrEmpty(type))
+            {
+                filters.Add(Builders<Manga>.Filter.Eq(g => g.Type, type));
+            }
+            if (!string.IsNullOrEmpty(publisher))
+            {
+                filters.Add(Builders<Manga>.Filter.Eq(g => g.Publisher, publisher));
+            }
+
+            var finalFilter = filters.Any()
+                ? Builders<Manga>.Filter.And(filters)
+                : Builders<Manga>.Filter.Empty;
+
+            return await _mangaCollection.Find(finalFilter).ToListAsync();
         }
-        if (!string.IsNullOrEmpty(publisher))
+        public async Task<List<Manga>> GetAllMangas() =>
+            await _mangaCollection.Find(manga => true).ToListAsync();
+
+        public async Task CreateManga(Manga manga) =>
+            await _mangaCollection.InsertOneAsync(manga);
+
+        public async Task<Manga> GetMangaById(int mangaId)
         {
-            filters.Add(Builders<Manga>.Filter.Eq(g => g.Publisher, publisher));
+            // var filter = Builders<Manga>.Filter.Eq(x => x.MangaId, mangaId);
+            return await _mangaCollection.Find(x => x.MangaId == mangaId).FirstOrDefaultAsync();
         }
 
-        var finalFilter = filters.Any()
-            ? Builders<Manga>.Filter.And(filters)
-            : Builders<Manga>.Filter.Empty;
+        public async Task UpdateMangaById(int id, Manga manga) =>
+            await _mangaCollection.ReplaceOneAsync(m => m.MangaId == id, manga);
 
-        return await _mangaCollection.Find(finalFilter).ToListAsync();
-    }
-    public async Task<List<Manga>> GetAllMangas() =>
-        await _mangaCollection.Find(manga => true).ToListAsync();
-
-    public async Task CreateManga(Manga manga) =>
-        await _mangaCollection.InsertOneAsync(manga);
-
-    public async Task<Manga> GetMangaById(int mangaId)
-    {
-        // var filter = Builders<Manga>.Filter.Eq(x => x.MangaId, mangaId);
-        return await _mangaCollection.Find(x => x.MangaId == mangaId).FirstOrDefaultAsync();
-    }
-
-    public async Task UpdateMangaById(int id, Manga manga) =>
-        await _mangaCollection.ReplaceOneAsync(m => m.MangaId == id, manga);
-
-    public async Task DeleteMangaById(int id)
-    {
-        await _mangaCollection.DeleteOneAsync(m => m.MangaId == id);
-    }
-    public async Task<List<string>> GetDistinctPublishersAsync()
-    {
-        return await _mangaCollection.Distinct<string>("Publisher", FilterDefinition<Manga>.Empty).ToListAsync();
-    }
-    public async Task<List<string>> GetDistinctTypesAsync()
-    {
-        return await _mangaCollection.Distinct<string>("Type", FilterDefinition<Manga>.Empty).ToListAsync();
+        public async Task DeleteMangaById(int id)
+        {
+            await _mangaCollection.DeleteOneAsync(m => m.MangaId == id);
+        }
+        public async Task<List<string>> GetDistinctPublishersAsync()
+        {
+            return await _mangaCollection.Distinct<string>("Publisher", FilterDefinition<Manga>.Empty).ToListAsync();
+        }
+        public async Task<List<string>> GetDistinctTypesAsync()
+        {
+            return await _mangaCollection.Distinct<string>("Type", FilterDefinition<Manga>.Empty).ToListAsync();
+        }
     }
 }
